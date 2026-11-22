@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+:root{--bg:#F6F7FB;--surface:#fff;--ink:#14152B;--muted:#55587A;--line:#E2E4EE;--accent:#4338CA;--soft:#EEF0FF;--onaccent:#fff;--warnbg:#FFF4DB;--warnink:#7A4A00;--okbg:#DDF5E6;--okink:#14532D}
+.dark{--bg:#0D0E1A;--surface:#161829;--ink:#F1F2FF;--muted:#A3A6C7;--line:#2A2D4A;--accent:#A5B4FC;--soft:#232650;--onaccent:#0D0E1A;--warnbg:#3A2D10;--warnink:#F3C777;--okbg:#1D3A27;--okink:#9FDDB0}
+body{@apply bg-bg text-ink antialiased;font-variant-numeric:tabular-nums}
+h1,h2{text-wrap:balance}
+@layer components{
+ .card{@apply bg-surface border border-line rounded-2xl p-5}
+ .btn{@apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-line px-4 font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent}
+ .btn-primary{@apply btn border-0 bg-accent text-onaccent}
+ .chip{@apply rounded-full px-2.5 py-0.5 text-xs font-medium}
+}
