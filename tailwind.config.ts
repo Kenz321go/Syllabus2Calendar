@@ -1,9 +1,19 @@
 import type { Config } from 'tailwindcss';
 const v = (n: string) => `var(--${n})`;
+const COURSE_COLORS = ['red', 'blue', 'green', 'purple', 'orange', 'teal', 'amber', 'pink'];
+const ACADEMIC_COLORS = ['green', 'orange', 'yellow', 'red', 'gray', 'blue'];
+// Every course colour has a soft fill (cc-x), dark ink (cc-x-ink) and a solid chip colour (cc-x-solid).
+const course = Object.fromEntries(COURSE_COLORS.flatMap((c) => [[`cc-${c}`, v(`cc-${c}`)], [`cc-${c}-ink`, v(`cc-${c}-ink`)], [`cc-${c}-solid`, v(`cc-${c}-solid`)]]));
+const academic = Object.fromEntries(ACADEMIC_COLORS.flatMap((c) => [[`ac-${c}`, v(`ac-${c}`)], [`ac-${c}-ink`, v(`ac-${c}-ink`)]]));
 export default {
   content: ['./app/**/*.tsx'],
   theme: { extend: {
-    colors: { bg: v('bg'), surface: v('surface'), ink: v('ink'), muted: v('muted'), line: v('line'), accent: v('accent'), soft: v('soft'), onaccent: v('onaccent'), warnbg: v('warnbg'), warnink: v('warnink'), okbg: v('okbg'), okink: v('okink'), closedbg: v('closedbg'), closedink: v('closedink'), "ac-green": v("ac-green"), "ac-green-ink": v("ac-green-ink"), "ac-orange": v("ac-orange"), "ac-orange-ink": v("ac-orange-ink"), "ac-yellow": v("ac-yellow"), "ac-yellow-ink": v("ac-yellow-ink"), "ac-red": v("ac-red"), "ac-red-ink": v("ac-red-ink"), "ac-gray": v("ac-gray"), "ac-gray-ink": v("ac-gray-ink"), "ac-blue": v("ac-blue"), "ac-blue-ink": v("ac-blue-ink"), personalbg: v("personalbg"), personalink: v("personalink"), "cc-red": v("cc-red"), "cc-red-ink": v("cc-red-ink"), "cc-blue": v("cc-blue"), "cc-blue-ink": v("cc-blue-ink"), "cc-green": v("cc-green"), "cc-green-ink": v("cc-green-ink"), "cc-purple": v("cc-purple"), "cc-purple-ink": v("cc-purple-ink"), "cc-orange": v("cc-orange"), "cc-orange-ink": v("cc-orange-ink"), "cc-teal": v("cc-teal"), "cc-teal-ink": v("cc-teal-ink"), "cc-amber": v("cc-amber"), "cc-amber-ink": v("cc-amber-ink"), "cc-pink": v("cc-pink"), "cc-pink-ink": v("cc-pink-ink") },
+    colors: {
+      bg: v('bg'), surface: v('surface'), ink: v('ink'), muted: v('muted'), line: v('line'), fill: v('fill'), accent: v('accent'), soft: v('soft'), onaccent: v('onaccent'),
+      warnbg: v('warnbg'), warnink: v('warnink'), okbg: v('okbg'), okink: v('okink'), closedbg: v('closedbg'), closedink: v('closedink'),
+      personalbg: v('personalbg'), personalink: v('personalink'), ...academic, ...course,
+    },
+    boxShadow: { card: v('shadow') },
     fontFamily: { display: ['var(--font-display)', 'Inter', 'sans-serif'] },
   } },
 } satisfies Config;

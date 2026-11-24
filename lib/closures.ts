@@ -115,8 +115,12 @@ export function shiftOneWeek(key: string, dir: 1 | -1, closures: readonly Closur
 // Thursday, and so on: the schedule slides by one class meeting. Closed days are skipped, sessions never
 // stack, and they never land on a day without class. Sessions sharing a date move together.
 //
-// Tasks on other weekdays (a Friday deadline, a Saturday quiz) have no class slot, so they move one week to
-// the same weekday (another week if that is a closure), keeping their order.
+// The clicked task itself ALWAYS moves to the next (or previous) class slot when the class days are known,
+// even if it sits on another weekday (e.g. a session the scan put on a Wednesday of a Tue/Thu course): it
+// lands on the very next designated class day, never the same weekday a week later.
+//
+// Other later tasks on other weekdays (a Friday deadline, a Saturday quiz) have no class slot, so they move
+// one week to the same weekday (another week if that is a closure), keeping their order.
 //
 // If the class days are unknown, everything moves one week.
 //
@@ -131,10 +135,12 @@ export function cascadeShift(
   const target = events.find((e) => e.id === eventId);
   if (!target?.date) return { events, changes: [] };
   const start = target.date;
-  const onClassDay = (key: string) => classDays.length > 0 && classDays.includes(weekdayOf(key));
+  // Dates that move by class slot: the course's class weekdays, plus the target's own date (so the clicked
+  // class always goes to the adjacent class day). Tasks sharing the target's date move with it.
+  const bySlot = (key: string) => classDays.length > 0 && (key === start || classDays.includes(weekdayOf(key)));
   const later = events.filter((e) => e.date && e.date >= start);
-  const sessionDates = [...new Set(later.filter((e) => onClassDay(e.date!)).map((e) => e.date!))].sort();
-  const otherDates = [...new Set(later.filter((e) => !onClassDay(e.date!)).map((e) => e.date!))].sort();
+  const sessionDates = [...new Set(later.filter((e) => bySlot(e.date!)).map((e) => e.date!))].sort();
+  const otherDates = [...new Set(later.filter((e) => !bySlot(e.date!)).map((e) => e.date!))].sort();
   const moveTo = new Map<string, string>();
 
   // Sessions: by class slot.

@@ -301,3 +301,74 @@ describe('inferClassDays uses class sessions, not graded work', () => {
     expect(inferClassDays(events)).toEqual([2, 4]);
   });
 });
+
+// The rule: Shift Forward/Backward moves the clicked class to the very next/previous DESIGNATED class day
+// (never the same weekday a week later), skips weekends and Campus Closed days, and cascades every later
+// session by one class meeting.
+describe('cascadeShift: next available class slot', () => {
+  const TUE_THU = [2, 4];
+  // Fall 2026 around the dates used here: Thu Oct 15 and Thu Oct 29 are closed; Mon Nov 9 is closed.
+
+  it('Tue/Thu: a cancelled Thursday moves to the next Tuesday (5 days), not the next Thursday (7 days)', () => {
+    const r = cascadeShift([ev('thu', '2026-10-15'), ev('tue', '2026-10-20')], 'thu', 1, TUE_THU);
+    expect(dates(r.events).thu).toBe('2026-10-20');
+    expect(daysBetween('2026-10-15', dates(r.events).thu!)).toBe(5);
+    expect(weekdayOf(dates(r.events).thu!)).toBe(2);
+  });
+
+  it('cascades every later session one class meeting, skipping later closed class days', () => {
+    const r = cascadeShift([
+      ev('t1', '2026-10-13'), // before the target: stays
+      ev('t2', '2026-10-15'), // closed Thursday (target)
+      ev('t3', '2026-10-20'), ev('t4', '2026-10-22'), ev('t5', '2026-10-27'),
+      ev('t6', '2026-11-03'), // the class after Oct 27 (Thu Oct 29 is closed)
+      ev('t7', '2026-11-05'),
+    ], 't2', 1, TUE_THU);
+    expect(dates(r.events)).toEqual({
+      t1: '2026-10-13',
+      t2: '2026-10-20', t3: '2026-10-22', t4: '2026-10-27',
+      t5: '2026-11-03', // next class day after Tue Oct 27 is Thu Oct 29 (closed) -> Tue Nov 3
+      t6: '2026-11-05', t7: '2026-11-10',
+    });
+  });
+
+  it('skips weekends: with Mon/Fri classes a cancelled Friday moves to Monday, then past a closed Friday', () => {
+    // Fri Dec 25 (Christmas) cancelled; Fri Jan 1 (New Year) is closed too.
+    const r = cascadeShift([ev('a', '2026-12-25'), ev('b', '2026-12-28'), ev('c', '2027-01-04')], 'a', 1, [1, 5]);
+    expect(dates(r.events)).toEqual({ a: '2026-12-28', b: '2027-01-04', c: '2027-01-08' });
+    for (const d of Object.values(dates(r.events))) expect(isOpenDay(d!)).toBe(true);
+  });
+
+  it('Shift Backward moves to the previous class day, skipping a closed one', () => {
+    // Previous class day before Tue Oct 20 is Thu Oct 15 (closed) -> Tue Oct 13.
+    const r = cascadeShift([ev('a', '2026-10-08'), ev('b', '2026-10-20'), ev('c', '2026-10-22')], 'b', -1, TUE_THU);
+    expect(r.blocked).toBeUndefined();
+    expect(dates(r.events)).toEqual({ a: '2026-10-08', b: '2026-10-13', c: '2026-10-20' });
+  });
+
+  it('Shift Backward: Thursday goes to the Tuesday of the same week (2 days), not the previous Thursday', () => {
+    const r = cascadeShift([ev('a', '2026-10-01'), ev('b', '2026-10-08')], 'b', -1, TUE_THU);
+    expect(dates(r.events).b).toBe('2026-10-06');
+  });
+
+  it('a clicked class on a non-class weekday still goes to the next class day, not a week later', () => {
+    // A session the scan put on Wed Oct 7 in a Tue/Thu course: forward -> Thu Oct 8 (previously Wed Oct 14).
+    const events = [ev('wed', '2026-10-07'), ev('thu', '2026-10-08'), ev('tue', '2026-10-13')];
+    const fwd = cascadeShift(events, 'wed', 1, TUE_THU);
+    expect(dates(fwd.events)).toEqual({ wed: '2026-10-08', thu: '2026-10-13', tue: '2026-10-20' }); // Thu Oct 15 closed
+    const back = cascadeShift(events, 'wed', -1, TUE_THU);
+    expect(dates(back.events).wed).toBe('2026-10-06');
+  });
+
+  it('later deadlines on non-class days still move one week (only the clicked task is forced onto a class day)', () => {
+    const r = cascadeShift([ev('thu', '2026-10-01'), ev('fri', '2026-10-02', { type: 'assignment' })], 'thu', 1, TUE_THU);
+    expect(dates(r.events)).toEqual({ thu: '2026-10-06', fri: '2026-10-09' });
+  });
+
+  it('the dry run used for the button label matches the real shift', () => {
+    const events = [ev('thu', '2026-10-15'), ev('tue', '2026-10-20')];
+    const preview = cascadeShift(events, 'thu', 1, TUE_THU).changes.find((c) => c.id === 'thu')?.to;
+    expect(preview).toBe('2026-10-20');
+    expect(preview).toBe(nearestClassSlot('2026-10-15', TUE_THU, 1));
+  });
+});
